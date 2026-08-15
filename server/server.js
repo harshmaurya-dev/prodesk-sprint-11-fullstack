@@ -1,0 +1,12 @@
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+import itemRoutes from "./routes/items.js";
+dotenv.config();
+const app=express();const PORT=process.env.PORT||5000;const __filename=fileURLToPath(import.meta.url);const __dirname=path.dirname(__filename);
+app.use(cors({origin:process.env.CLIENT_URL||"http://localhost:5173",methods:["GET","POST","DELETE"]}));app.use(express.json());app.use("/uploads",express.static(path.join(__dirname,"uploads")));
+app.get("/health",(req,res)=>res.json({success:true,message:"Sprint 11 API is running"}));app.use("/api/items",itemRoutes);app.use((err,req,res,next)=>{console.error(err);res.status(500).json({success:false,message:err.message||"Internal server error"})});
+const startServer=async()=>{try{if(!process.env.MONGODB_URI)throw new Error("MONGODB_URI is missing in .env");await mongoose.connect(process.env.MONGODB_URI);console.log("MongoDB connected");app.listen(PORT,()=>console.log(`Server running on http://localhost:${PORT}`))}catch(error){console.error("Startup error:",error.message);process.exit(1)}};startServer();
