@@ -1,0 +1,12 @@
+import express from "express";
+import multer from "multer";
+import path from "path";
+import { randomUUID } from "crypto";
+import Item from "../models/Item.js";
+const router=express.Router();
+const storage=multer.diskStorage({destination:(req,file,cb)=>cb(null,"uploads/"),filename:(req,file,cb)=>cb(null,`${randomUUID()}${path.extname(file.originalname)}`)});
+const upload=multer({storage,fileFilter:(req,file,cb)=>file.mimetype.startsWith("image/")?cb(null,true):cb(new Error("Only image files are allowed")),limits:{fileSize:5*1024*1024}});
+router.get("/",async(req,res,next)=>{try{const items=await Item.find().sort({createdAt:-1});res.json({success:true,data:items})}catch(e){next(e)}});
+router.post("/",upload.single("image"),async(req,res,next)=>{try{const{title,description}=req.body;if(!title?.trim()||!description?.trim())return res.status(400).json({success:false,message:"Title and description are required"});const imageUrl=req.file?`${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`:"";const item=await Item.create({title:title.trim(),description:description.trim(),imageUrl});res.status(201).json({success:true,data:item})}catch(e){next(e)}});
+router.delete("/:id",async(req,res,next)=>{try{const item=await Item.findByIdAndDelete(req.params.id);if(!item)return res.status(404).json({success:false,message:"Item not found"});res.json({success:true,message:"Item deleted"})}catch(e){next(e)}});
+export default router;
